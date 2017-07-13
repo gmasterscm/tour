@@ -499,9 +499,9 @@ namespace NodaTime
             return new Period(years, months, weeks, days, hours, minutes, seconds, milliseconds, ticks, nanoseconds);
         }
 
-        private static long GetTimeBetween(LocalDateTime start, LocalDateTime end, TimePeriodField periodField)
+        private static long GetTimeBetween(LocalDateTime begin, LocalDateTime end, TimePeriodField periodField)
         {
-            LocalInstant startLocalInstant = start.ToLocalInstant();
+            LocalInstant startLocalInstant = begin.ToLocalInstant();
             LocalInstant endLocalInstant = end.ToLocalInstant();
 
             Duration duration =
