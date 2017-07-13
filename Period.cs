@@ -203,16 +203,16 @@ namespace NodaTime
         internal Period(int years, int months, int weeks, int days, long hours, long minutes, long seconds,
             long milliseconds, long ticks, long nanoseconds)
         {
-            this.Years = years;
-            this.Months = months;
-            this.Weeks = weeks;
-            this.Days = days;
-            this.Hours = hours;
-            this.Minutes = minutes;
-            this.Seconds = seconds;
-            this.Milliseconds = milliseconds;
-            this.Ticks = ticks;
-            this.Nanoseconds = nanoseconds;
+            Years = years;
+            Months = months;
+            Weeks = weeks;
+            Days = days;
+            Hours = hours;
+            Minutes = minutes;
+            Seconds = seconds;
+            Milliseconds = milliseconds;
+            Ticks = ticks;
+            Nanoseconds = nanoseconds;
         }
 
         /// <summary>
