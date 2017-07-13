@@ -414,15 +414,15 @@ namespace NodaTime
         [NotNull]
         public static Period Between(LocalDateTime start, LocalDateTime end, PeriodUnits units)
         {
-            Preconditions.CheckArgument(units != 0, nameof(units), "Units must not be empty");
-            Preconditions.CheckArgument((units & ~PeriodUnits.AllUnits) == 0, nameof(units), "Units contains an unknown value: {0}", units);
-            CalendarSystem calendar = start.Calendar;
-            Preconditions.CheckArgument(calendar.Equals(end.Calendar), nameof(end), "start and end must use the same calendar system");
-
             if (start == end)
             {
                 return Zero;
             }
+
+            Preconditions.CheckArgument(units != 0, nameof(units), "Units must not be empty");
+            Preconditions.CheckArgument((units & ~PeriodUnits.AllUnits) == 0, nameof(units), "Units contains an unknown value: {0}", units);
+            CalendarSystem calendar = start.Calendar;
+            Preconditions.CheckArgument(calendar.Equals(end.Calendar), nameof(end), "start and end must use the same calendar system");
 
             // Adjust for situations like "days between 5th January 10am and 7th Janary 5am" which should be one
             // day, because if we actually reach 7th January with date fields, we've overshot.
