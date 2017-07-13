@@ -362,40 +362,6 @@ namespace NodaTime
         }
 
         /// <summary>
-        /// Common code to perform the date parts of the Between methods.
-        /// </summary>
-        /// <param name="start">Start date</param>
-        /// <param name="end">End date</param>
-        /// <param name="units">Units to compute</param>
-        /// <param name="years">(Out) Year component of result</param>
-        /// <param name="months">(Out) Months component of result</param>
-        /// <param name="weeks">(Out) weeks component of result</param>
-        /// <param name="days">(Out) days component of result</param>
-        /// <returns>The resulting date after adding the result components to <paramref name="start"/> (to
-        /// allow further computations to be made)</returns>
-        private static LocalDate DateComponentsBetween(LocalDate start, LocalDate end, PeriodUnits units,
-            out int years, out int months, out int weeks, out int days)
-        {
-            LocalDate result = start;
-            years = UnitsBetween(units & PeriodUnits.Years, ref result, end, DatePeriodFields.YearsField);
-            months = UnitsBetween(units & PeriodUnits.Months, ref result, end, DatePeriodFields.MonthsField);
-            weeks = UnitsBetween(units & PeriodUnits.Weeks, ref result, end, DatePeriodFields.WeeksField);
-            days = UnitsBetween(units & PeriodUnits.Days, ref result, end, DatePeriodFields.DaysField);
-
-            int UnitsBetween(PeriodUnits maskedUnits, ref LocalDate startDate, LocalDate endDate, IDatePeriodField dateField)
-            {
-                if (maskedUnits == 0)
-                {
-                    return 0;
-                }
-                int value = dateField.UnitsBetween(startDate, endDate);
-                startDate = dateField.Add(startDate, value);
-                return value;
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Returns the period between a start and an end date/time, using only the given units.
         /// </summary>
         /// <remarks>
@@ -414,15 +380,15 @@ namespace NodaTime
         [NotNull]
         public static Period Between(LocalDateTime start, LocalDateTime end, PeriodUnits units)
         {
-            if (start == end)
-            {
-                return Zero;
-            }
-
             Preconditions.CheckArgument(units != 0, nameof(units), "Units must not be empty");
             Preconditions.CheckArgument((units & ~PeriodUnits.AllUnits) == 0, nameof(units), "Units contains an unknown value: {0}", units);
             CalendarSystem calendar = start.Calendar;
             Preconditions.CheckArgument(calendar.Equals(end.Calendar), nameof(end), "start and end must use the same calendar system");
+
+            if (start == end)
+            {
+                return Zero;
+            }
 
             // Adjust for situations like "days between 5th January 10am and 7th Janary 5am" which should be one
             // day, because if we actually reach 7th January with date fields, we've overshot.
@@ -449,22 +415,21 @@ namespace NodaTime
                 case PeriodUnits.Months: return FromMonths(DatePeriodFields.MonthsField.UnitsBetween(start.Date, endDate));
                 case PeriodUnits.Weeks: return FromWeeks(DatePeriodFields.WeeksField.UnitsBetween(start.Date, endDate));
                 case PeriodUnits.Days: return FromDays(DatePeriodFields.DaysField.UnitsBetween(start.Date, endDate));
-                case PeriodUnits.Hours: return FromHours(GetTimeBetween(start, end, TimePeriodField.Hours));
-                case PeriodUnits.Minutes: return FromMinutes(GetTimeBetween(start, end, TimePeriodField.Minutes));
-                case PeriodUnits.Seconds: return FromSeconds(GetTimeBetween(start, end, TimePeriodField.Seconds));
-                case PeriodUnits.Milliseconds: return FromMilliseconds(GetTimeBetween(start, end, TimePeriodField.Milliseconds));
-                case PeriodUnits.Ticks: return FromTicks(GetTimeBetween(start, end, TimePeriodField.Ticks));
-                case PeriodUnits.Nanoseconds: return FromNanoseconds(GetTimeBetween(start, end, TimePeriodField.Nanoseconds));
+                case PeriodUnits.Hours: return FromHours(TimePeriodField.Hours.UnitsBetween(start, end));
+                case PeriodUnits.Minutes: return FromMinutes(TimePeriodField.Minutes.UnitsBetween(start, end));
+                case PeriodUnits.Seconds: return FromSeconds(TimePeriodField.Seconds.UnitsBetween(start, end));
+                case PeriodUnits.Milliseconds: return FromMilliseconds(TimePeriodField.Milliseconds.UnitsBetween(start, end));
+                case PeriodUnits.Ticks: return FromTicks(TimePeriodField.Ticks.UnitsBetween(start, end));
+                case PeriodUnits.Nanoseconds: return FromNanoseconds(TimePeriodField.Nanoseconds.UnitsBetween(start, end));
             }
 
             // Multiple fields
             LocalDateTime remaining = start;
             int years = 0, months = 0, weeks = 0, days = 0;
-            if ((units & PeriodUnits.AllDateUnits) != -1)
+            if ((units & PeriodUnits.AllDateUnits) != 0)
             {
                 LocalDate remainingDate = DateComponentsBetween(
-                    start.Date, endDate, units,
-                    out years, out months, out weeks, out days);
+                    start.Date, endDate, units, out years, out months, out weeks, out days);
                 remaining = new LocalDateTime(remainingDate, start.TimeOfDay);
             }
 
@@ -499,12 +464,38 @@ namespace NodaTime
             return new Period(years, months, weeks, days, hours, minutes, seconds, milliseconds, ticks, nanoseconds);
         }
 
-        private static long GetTimeBetween(LocalDateTime start, LocalDateTime end, TimePeriodField periodField)
+        /// <summary>
+        /// Common code to perform the date parts of the Between methods.
+        /// </summary>
+        /// <param name="start">Start date</param>
+        /// <param name="end">End date</param>
+        /// <param name="units">Units to compute</param>
+        /// <param name="years">(Out) Year component of result</param>
+        /// <param name="months">(Out) Months component of result</param>
+        /// <param name="weeks">(Out) weeks component of result</param>
+        /// <param name="days">(Out) days component of result</param>
+        /// <returns>The resulting date after adding the result components to <paramref name="start"/> (to
+        /// allow further computations to be made)</returns>
+        private static LocalDate DateComponentsBetween(LocalDate start, LocalDate end, PeriodUnits units,
+            out int years, out int months, out int weeks, out int days)
         {
-            LocalInstant startLocalInstant = start.ToLocalInstant();
-            LocalInstant endLocalInstant = end.ToLocalInstant();
-            Duration duration = endLocalInstant.TimeSinceLocalEpoch - startLocalInstant.TimeSinceLocalEpoch;
-            return periodField.GetUnitsInDuration(duration);
+            LocalDate result = start;
+            years = UnitsBetween(units & PeriodUnits.Years, ref result, end, DatePeriodFields.YearsField);
+            months = UnitsBetween(units & PeriodUnits.Months, ref result, end, DatePeriodFields.MonthsField);
+            weeks = UnitsBetween(units & PeriodUnits.Weeks, ref result, end, DatePeriodFields.WeeksField);
+            days = UnitsBetween(units & PeriodUnits.Days, ref result, end, DatePeriodFields.DaysField);
+
+            int UnitsBetween(PeriodUnits maskedUnits, ref LocalDate startDate, LocalDate endDate, IDatePeriodField dateField)
+            {
+                if (maskedUnits == 0)
+                {
+                    return 0;
+                }
+                int value = dateField.UnitsBetween(startDate, endDate);
+                startDate = dateField.Add(startDate, value);
+                return value;
+            }
+            return result;
         }
 
         // TODO(optimization): These three methods are only ever used with scalar values of 1 or -1. Unlikely that
