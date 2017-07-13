@@ -503,7 +503,11 @@ namespace NodaTime
         {
             LocalInstant startLocalInstant = start.ToLocalInstant();
             LocalInstant endLocalInstant = end.ToLocalInstant();
-            Duration duration = endLocalInstant.TimeSinceLocalEpoch - startLocalInstant.TimeSinceLocalEpoch;
+
+            Duration duration =
+                endLocalInstant.TimeSinceLocalEpoch
+              - startLocalInstant.TimeSinceLocalEpoch;
+
             return periodField.GetUnitsInDuration(duration);
         }
 
