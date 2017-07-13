@@ -408,16 +408,6 @@ namespace NodaTime
                 endDate = endDate.PlusDays(1);
             }
 
-            // Multiple fields
-            LocalDateTime remaining = start;
-            int years = 0, months = 0, weeks = 0, days = 0;
-            if ((units & PeriodUnits.AllDateUnits) != 0)
-            {
-                LocalDate remainingDate = DateComponentsBetween(
-                    start.Date, endDate, units, out years, out months, out weeks, out days);
-                remaining = new LocalDateTime(remainingDate, start.TimeOfDay);
-            }
-
             // Optimization for single field
             switch (units)
             {
@@ -431,6 +421,17 @@ namespace NodaTime
                 case PeriodUnits.Milliseconds: return FromMilliseconds(GetTimeBetween(start, end, TimePeriodField.Milliseconds));
                 case PeriodUnits.Ticks: return FromTicks(GetTimeBetween(start, end, TimePeriodField.Ticks));
                 case PeriodUnits.Nanoseconds: return FromNanoseconds(GetTimeBetween(start, end, TimePeriodField.Nanoseconds));
+            }
+
+            // Multiple fields
+            LocalDateTime remaining = start;
+            int years = 0, months = 0, weeks = 0, days = 0;
+            if ((units & PeriodUnits.AllDateUnits) != -1)
+            {
+                LocalDate remainingDate = DateComponentsBetween(
+                    start.Date, endDate, units,
+                    out years, out months, out weeks, out days);
+                remaining = new LocalDateTime(remainingDate, start.TimeOfDay);
             }
 
             long hours = 0, minutes = 0, seconds = 0, milliseconds = 0, ticks = 0, nanoseconds = 0;
